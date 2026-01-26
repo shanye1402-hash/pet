@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Supabase Connection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <h1>Supabase Connection Test</h1>
+    <div id="result">Testing...</div>
+    <script>
+        const SUPABASE_URL = 'https://qzznzxomuevealskbmfa.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_g-FXVDg1vRSevmu6X9Pe8w_mEOSF6oX';
+
+        const resultDiv = document.getElementById('result');
+
+        async function testConnection() {
+            try {
+                resultDiv.innerHTML = 'Creating Supabase client...<br>';
+                console.log('URL:', SUPABASE_URL);
+                console.log('Key:', SUPABASE_ANON_KEY);
+
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+                resultDiv.innerHTML += 'Querying shelters table...<br>';
+                console.log('Testing Supabase connection...');
+
+                const startTime = Date.now();
+                const { data, error } = await supabase.from('shelters').select('*').limit(1);
+                const duration = Date.now() - startTime;
+
+                if (error) {
+                    resultDiv.innerHTML += `<span style="color:red">Error: ${JSON.stringify(error)}</span><br>Duration: ${duration}ms`;
+                    console.error('Error:', error);
+                } else {
+                    resultDiv.innerHTML += `<span style="color:green">Success!</span><br>Duration: ${duration}ms<br>Data: <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    console.log('Success! Data:', data);
+                }
+            } catch (e) {
+                resultDiv.innerHTML += `<span style="color:red">Exception: ${e.message}</span><br><pre>${e.stack}</pre>`;
+                console.error('Exception:', e);
+            }
+        }
+
+        testConnection();
+    </script>
+</body>
+
+</html>
