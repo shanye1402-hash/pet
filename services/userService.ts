@@ -1,4 +1,5 @@
 import { supabase, DbUser } from '../lib/supabaseClient';
+import { supabaseRest } from '../lib/supabaseRestClient';
 import { getCurrentUser } from './authService';
 
 // Get current user's profile
@@ -73,29 +74,29 @@ export async function getUserStats() {
     const user = await getCurrentUser();
     if (!user) return { applications: 0, favorites: 0, adopted: 0 };
 
-    // Get pending applications count
-    const { count: applicationsCount } = await supabase
-        .from('applications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('status', 'pending');
+    try {
+        // 获取待审核申请数
+        const { data: pendingApps } = await supabaseRest.from('applications')
+            .select('*')
+            .eq('user_id', user.id);
 
-    // Get favorites count
-    const { count: favoritesCount } = await supabase
-        .from('favorites')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        const applicationsCount = (pendingApps || []).filter((app: any) => app.status === 'pending').length;
+        const adoptedCount = (pendingApps || []).filter((app: any) => app.status === 'approved').length;
 
-    // Get approved applications (adopted pets) count
-    const { count: adoptedCount } = await supabase
-        .from('applications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('status', 'approved');
+        // 获取收藏数
+        const { data: favorites } = await supabaseRest.from('favorites')
+            .select('*')
+            .eq('user_id', user.id);
 
-    return {
-        applications: applicationsCount || 0,
-        favorites: favoritesCount || 0,
-        adopted: adoptedCount || 0,
-    };
+        const favoritesCount = (favorites || []).length;
+
+        return {
+            applications: applicationsCount,
+            favorites: favoritesCount,
+            adopted: adoptedCount,
+        };
+    } catch (error) {
+        console.error('Error fetching user stats:', error);
+        return { applications: 0, favorites: 0, adopted: 0 };
+    }
 }

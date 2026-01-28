@@ -269,7 +269,7 @@ const PetDetailScreen: React.FC = () => {
         </button>
 
         <button
-          onClick={() => navigate('/apply/step1', { state: { petId: id, petName: pet.name } })}
+          onClick={() => navigate('/apply/step1', { state: { petId: id, petName: pet.name, petImage: pet.image } })}
           className="flex-1 h-12 rounded-xl bg-primary hover:bg-orange-600 active:scale-[0.98] transition-all text-white text-base font-bold shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
         >
           申请领养

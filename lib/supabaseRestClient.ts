@@ -110,6 +110,22 @@ export const supabaseRest = {
                 resolve(result);
             },
         }),
+
+        update: (data: object) => ({
+            table,
+            body: data,
+            query: '',
+
+            eq: function (column: string, value: string) {
+                this.query += `${this.query ? '&' : ''}${column}=eq.${encodeURIComponent(value)}`;
+                return this;
+            },
+
+            then: async function (resolve: (result: { data: any; error: any }) => void) {
+                const result = await restCall<any>(this.table, 'PATCH', this.query, this.body);
+                resolve(result);
+            },
+        }),
     }),
 };
 
@@ -182,12 +198,49 @@ export const supabaseAuth = {
                     this.user = session.user;
                     headers['Authorization'] = `Bearer ${session.access_token}`;
                     return { data: { session }, error: null };
+                } else if (session.refresh_token) {
+                    // Token expired, try to refresh
+                    console.log('Token expired, attempting refresh...');
+                    try {
+                        const refreshResult = await this.refreshToken(session.refresh_token);
+                        if (refreshResult.data) {
+                            return { data: { session: refreshResult.data }, error: null };
+                        }
+                    } catch (refreshError) {
+                        console.error('Failed to refresh token:', refreshError);
+                        // Clear invalid session
+                        localStorage.removeItem('supabase_session');
+                    }
                 }
             } catch (e) {
                 console.error('Failed to parse session:', e);
             }
         }
         return { data: { session: null }, error: null };
+    },
+
+    async refreshToken(refreshToken: string) {
+        const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+            method: 'POST',
+            headers: {
+                'apikey': supabaseAnonKey,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error_description || data.msg || 'Token refresh failed');
+        }
+
+        // Store new session
+        this.session = data;
+        this.user = data.user;
+        localStorage.setItem('supabase_session', JSON.stringify(data));
+        headers['Authorization'] = `Bearer ${data.access_token}`;
+
+        return { data, error: null };
     },
 
     async getUser() {

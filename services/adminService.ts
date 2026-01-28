@@ -1,8 +1,11 @@
 import { supabase, DbUser, DbPet, DbApplication } from '../lib/supabaseClient';
+import { supabaseRest } from '../lib/supabaseRestClient';
 
 export interface AdminUser extends DbUser {
-    // Add any admin-specific fields here if needed
+    // 扩展管理员用户类型，可用于添加额外字段
 }
+
+// ==================== 用户管理 ====================
 
 export async function getAllUsers(): Promise<AdminUser[]> {
     const { data, error } = await supabase
@@ -18,7 +21,8 @@ export async function getAllUsers(): Promise<AdminUser[]> {
     return data || [];
 }
 
-// Pet Management
+// ==================== 宠物管理 ====================
+
 export async function getAllPets(): Promise<DbPet[]> {
     const { data, error } = await supabase
         .from('pets')
@@ -49,72 +53,119 @@ export async function deletePet(id: string): Promise<void> {
 }
 
 export async function createPet(pet: Partial<DbPet>): Promise<DbPet> {
-    const { data, error } = await supabase
-        .from('pets')
-        .insert(pet)
-        .select()
-        .single();
+    // 使用 supabaseRest 来确保认证 header 正确传递
+    const result = await new Promise<{ data: any, error: any }>((resolve) => {
+        supabaseRest.from('pets').insert(pet).then(resolve);
+    });
 
-    if (error) {
-        console.error('Error creating pet:', error);
-        throw error;
+    if (result.error) {
+        console.error('Error creating pet:', result.error);
+        throw result.error;
     }
 
-    return data;
+    const createdPet = Array.isArray(result.data) ? result.data[0] : result.data;
+    return createdPet;
 }
 
 export async function updatePet(id: string, updates: Partial<DbPet>): Promise<DbPet> {
-    const { data, error } = await supabase
-        .from('pets')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+    // 使用 supabaseRest 确保认证 header 正确传递
+    const result = await new Promise<{ data: any, error: any }>((resolve) => {
+        supabaseRest.from('pets').update(updates).eq('id', id).then(resolve);
+    });
 
-    if (error) {
-        console.error('Error updating pet:', error);
-        throw error;
+    if (result.error) {
+        console.error('Error updating pet:', result.error);
+        throw result.error;
     }
 
-    return data;
+    // 检查是否有行被更新
+    const updatedPet = Array.isArray(result.data) ? result.data[0] : result.data;
+    if (!updatedPet) {
+        throw new Error('更新失败：可能是权限不足或宠物不存在。请检查 Supabase RLS 策略。');
+    }
+
+    return updatedPet;
 }
 
-// Application Management
+// ==================== 领养申请管理 ====================
+
 export async function getAllApplications(): Promise<DbApplication[]> {
-    const { data, error } = await supabase
-        .from('applications')
-        .select(`
-            *,
-            pet:pets(name, image),
-            user:users__user_id_fkey(name, email)
-        `) // Note: joined manually since types might not reflect relations perfectly, but trying standard query
-        // Re-checking relation names. Usually it's just table name if foreign key exists. 
-        // If users__user_id_fkey is not the relation name, might fail. 
-        // Safer to try basic join first.
-        .order('created_at', { ascending: false });
+    // 使用 supabaseRest 确保认证正确
+    const result = await new Promise<{ data: any, error: any }>((resolve) => {
+        supabaseRest.from('applications').select('*').order('created_at', { ascending: false }).then(resolve);
+    });
 
-    // Let's refine the query to be safe with standard Supabase relations
-    // We'll use a safer query in the actual code block below
-
-    // Correction for the replacement content:
-    // We'll trust the simple join for now: pet:pets(*), user:users(*)
-
-    if (error) {
-        console.error('Error fetching applications:', error);
-        throw error;
+    if (result.error) {
+        console.error('Error fetching applications:', result.error);
+        throw result.error;
     }
 
-    return data || [];
+    const applications = result.data || [];
+
+    // 手动获取关联的 pet 和 user 数据
+    const enrichedApplications = await Promise.all(applications.map(async (app: any) => {
+        let pet = null;
+        let user = null;
+
+        // 获取宠物信息
+        if (app.pet_id) {
+            const petResult = await new Promise<{ data: any, error: any }>((resolve) => {
+                supabaseRest.from('pets').select('*').eq('id', app.pet_id).single().then(resolve);
+            });
+            pet = petResult.data;
+        }
+
+        // 获取用户信息
+        if (app.user_id) {
+            const userResult = await new Promise<{ data: any, error: any }>((resolve) => {
+                supabaseRest.from('users').select('*').eq('id', app.user_id).single().then(resolve);
+            });
+            user = userResult.data;
+        }
+
+        return {
+            ...app,
+            pet: pet ? { name: pet.name, image: pet.image } : null,
+            user: user ? { name: user.name, email: user.email } : null,
+        };
+    }));
+
+    return enrichedApplications;
 }
 
-export async function updateApplicationStatus(id: string, status: 'approved' | 'rejected'): Promise<void> {
-    const { error } = await supabase
-        .from('applications')
-        .update({ status })
-        .eq('id', id);
+export async function updateApplicationStatus(
+    id: string,
+    status: 'approved' | 'rejected',
+    applicationInfo?: { userId: string, petId: string, petName: string, petImage: string }
+): Promise<void> {
+    // 使用 supabaseRest 更新状态
+    const result = await new Promise<{ data: any, error: any }>((resolve) => {
+        supabaseRest.from('applications').update({ status }).eq('id', id).then(resolve);
+    });
 
-    if (error) {
-        console.error('Error updating application status:', error);
-        throw error;
+    if (result.error) {
+        console.error('Error updating application status:', result.error);
+        throw result.error;
+    }
+
+    // 创建审核结果通知
+    if (applicationInfo) {
+        const { createApplicationApprovedNotification, createApplicationRejectedNotification } = await import('./notificationService');
+
+        if (status === 'approved') {
+            await createApplicationApprovedNotification(
+                applicationInfo.userId,
+                applicationInfo.petId,
+                applicationInfo.petName,
+                applicationInfo.petImage
+            );
+        } else if (status === 'rejected') {
+            await createApplicationRejectedNotification(
+                applicationInfo.userId,
+                applicationInfo.petId,
+                applicationInfo.petName,
+                applicationInfo.petImage
+            );
+        }
     }
 }

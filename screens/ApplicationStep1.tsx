@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const ApplicationStep1: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { petId, petName } = (location.state as { petId?: string; petName?: string }) || {};
+  const { petId, petName, petImage } = (location.state as { petId?: string; petName?: string; petImage?: string }) || {};
 
   const [formData, setFormData] = useState({
     name: '',
@@ -34,7 +34,7 @@ const ApplicationStep1: React.FC = () => {
       alert('请填写所有必填信息');
       return;
     }
-    navigate('/apply/step2', { state: { ...formData, petId, petName } });
+    navigate('/apply/step2', { state: { ...formData, petId, petName, petImage } });
   };
 
   return (
@@ -141,8 +141,8 @@ const ApplicationStep1: React.FC = () => {
                   key={type}
                   onClick={() => handleHousingSelect(type)}
                   className={`h-10 px-5 rounded-full text-sm font-medium border shadow-sm transition-all flex items-center justify-center font-display ${formData.housingType === type
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-surface-light dark:bg-surface-dark text-text-secondary dark:text-text-secondary-dark border-border-light dark:border-border-dark hover:border-primary/50 hover:text-primary'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-surface-light dark:bg-surface-dark text-text-secondary dark:text-text-secondary-dark border-border-light dark:border-border-dark hover:border-primary/50 hover:text-primary'
                     }`}
                 >
                   {type}
@@ -159,8 +159,8 @@ const ApplicationStep1: React.FC = () => {
               <div
                 onClick={() => handlePetsChange(true)}
                 className={`cursor-pointer relative h-12 w-full rounded-xl border flex items-center justify-center font-medium transition-all font-display ${formData.hasPets
-                    ? 'bg-primary/10 border-primary text-primary'
-                    : 'bg-surface-light dark:bg-surface-dark border-border-light dark:border-border-dark text-text-secondary dark:text-text-secondary-dark'
+                  ? 'bg-primary/10 border-primary text-primary'
+                  : 'bg-surface-light dark:bg-surface-dark border-border-light dark:border-border-dark text-text-secondary dark:text-text-secondary-dark'
                   }`}
               >
                 是
@@ -170,8 +170,8 @@ const ApplicationStep1: React.FC = () => {
               <div
                 onClick={() => handlePetsChange(false)}
                 className={`cursor-pointer relative h-12 w-full rounded-xl border flex items-center justify-center font-medium transition-all font-display ${!formData.hasPets
-                    ? 'bg-primary/10 border-primary text-primary'
-                    : 'bg-surface-light dark:bg-surface-dark border-border-light dark:border-border-dark text-text-secondary dark:text-text-secondary-dark'
+                  ? 'bg-primary/10 border-primary text-primary'
+                  : 'bg-surface-light dark:bg-surface-dark border-border-light dark:border-border-dark text-text-secondary dark:text-text-secondary-dark'
                   }`}
               >
                 否

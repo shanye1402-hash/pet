@@ -71,7 +71,7 @@ const ApplicationHistoryScreen: React.FC = () => {
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center bg-white/90 dark:bg-[#221910]/90 backdrop-blur-md p-4 pb-2 justify-between border-b border-gray-100 dark:border-white/5 shadow-sm">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/profile')}
           className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
         >
           <span className="material-symbols-outlined text-[#181411] dark:text-white">arrow_back</span>

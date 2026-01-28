@@ -1,6 +1,7 @@
 import { supabaseRest } from '../lib/supabaseRestClient';
 import { DbApplication } from '../lib/supabaseClient';
 import { getCurrentUser } from './authService';
+import { createApplicationSubmittedNotification } from './notificationService';
 
 export interface ApplicationFormData {
     name: string;
@@ -16,7 +17,7 @@ export interface ApplicationFormData {
 }
 
 // Submit a new adoption application
-export async function submitApplication(petId: string, formData: ApplicationFormData) {
+export async function submitApplication(petId: string, formData: ApplicationFormData, petInfo?: { name: string, image: string }) {
     const user = await getCurrentUser();
     if (!user) throw new Error('请先登录');
 
@@ -30,6 +31,11 @@ export async function submitApplication(petId: string, formData: ApplicationForm
     if (error) {
         console.error('Error submitting application:', error);
         throw error;
+    }
+
+    // 创建申请提交通知
+    if (petInfo) {
+        await createApplicationSubmittedNotification(user.id, petId, petInfo.name, petInfo.image);
     }
 
     return data;

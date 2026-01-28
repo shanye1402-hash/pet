@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { signIn } from '../../services/authService';
 
 const AdminLoginScreen: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -8,19 +8,23 @@ const AdminLoginScreen: React.FC = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { signIn } = useAuth();
+    // useAuth for checking login state if needed, but not for signIn action
+    // const { } = useAuth(); 
     const navigate = useNavigate();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('Attempting login with:', email); // Debug log
         setError('');
         setLoading(true);
 
         try {
-            const { error } = await signIn(email, password);
-            if (error) throw error;
+            console.log('Calling signIn...'); // Debug log
+            await signIn({ email, password });
+            console.log('Login successful, navigating...'); // Debug log
             navigate('/admin/dashboard');
         } catch (err: any) {
+            console.error('Login error:', err); // Debug log
             setError(err.message || '登录失败，请检查您的凭据');
         } finally {
             setLoading(false);

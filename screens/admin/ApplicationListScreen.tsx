@@ -34,11 +34,20 @@ const ApplicationListScreen: React.FC = () => {
     const handleStatusUpdate = async (id: string, status: 'approved' | 'rejected') => {
         if (!window.confirm(`确定要${status === 'approved' ? '通过' : '拒绝'}这条申请吗？`)) return;
 
+        // 找到对应的申请，获取用户和宠物信息
+        const app = applications.find(a => a.id === id);
+
         try {
-            await updateApplicationStatus(id, status);
+            await updateApplicationStatus(id, status, app ? {
+                userId: app.user_id,
+                petId: app.pet_id,
+                petName: app.pet?.name || '未知宠物',
+                petImage: app.pet?.image || '',
+            } : undefined);
+
             // Optimistic update
-            setApplications(apps => apps.map(app =>
-                app.id === id ? { ...app, status } : app
+            setApplications(apps => apps.map(a =>
+                a.id === id ? { ...a, status } : a
             ));
         } catch (err: any) {
             alert('操作失败: ' + err.message);

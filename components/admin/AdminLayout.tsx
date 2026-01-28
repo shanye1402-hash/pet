@@ -1,15 +1,14 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { signOut } from '../../services/authService';
 
 const AdminLayout: React.FC = () => {
-    const { signOut } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         try {
             await signOut();
-            navigate('/login');
+            navigate('/admin/login');
         } catch (error) {
             console.error('Error signing out:', error);
         }

@@ -29,6 +29,8 @@ const ApplicationStep2: React.FC = () => {
 
     // Get petId from state - passed from PetDetailScreen
     const petId = step1Data.petId;
+    const petName = step1Data.petName;
+    const petImage = step1Data.petImage;
 
     if (!petId) {
       alert('缺少宠物信息，请重新选择');
@@ -38,7 +40,11 @@ const ApplicationStep2: React.FC = () => {
 
     setLoading(true);
     try {
-      await submitApplication(petId, fullApplicationData);
+      // 传递宠物信息用于创建通知
+      await submitApplication(petId, fullApplicationData, {
+        name: petName || '未知宠物',
+        image: petImage || '',
+      });
       navigate('/success');
     } catch (error: any) {
       console.error('Error submitting application:', error);
@@ -100,8 +106,8 @@ const ApplicationStep2: React.FC = () => {
                   key={level}
                   onClick={() => setExperience(level)}
                   className={`px-5 py-2.5 rounded-full text-sm font-semibold shadow-sm transition-all active:scale-95 ${experience === level
-                      ? 'bg-primary text-white scale-105'
-                      : 'bg-surface-light dark:bg-surface-dark border border-border-color dark:border-white/10 text-text-main dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                    ? 'bg-primary text-white scale-105'
+                    : 'bg-surface-light dark:bg-surface-dark border border-border-color dark:border-white/10 text-text-main dark:text-white hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                 >
                   {level}
@@ -163,8 +169,8 @@ const ApplicationStep2: React.FC = () => {
                   key={item.id}
                   onClick={() => setActivityLevel(item.id)}
                   className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${activityLevel === item.id
-                      ? 'bg-primary/10 border-primary text-primary shadow-sm'
-                      : 'bg-surface-light dark:bg-surface-dark border-border-color dark:border-white/10 text-text-main dark:text-white hover:border-primary/50'
+                    ? 'bg-primary/10 border-primary text-primary shadow-sm'
+                    : 'bg-surface-light dark:bg-surface-dark border-border-color dark:border-white/10 text-text-main dark:text-white hover:border-primary/50'
                     }`}
                 >
                   <span className={`material-symbols-outlined ${activityLevel === item.id ? 'fill-1' : ''}`}>{item.icon}</span>

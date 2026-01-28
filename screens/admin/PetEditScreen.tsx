@@ -56,10 +56,13 @@ const PetEditScreen: React.FC = () => {
         setError('');
 
         try {
+            // 过滤掉关联查询的虚拟字段，只保留数据库实际列
+            const { shelter, created_at, id: petId, ...petData } = formData as any;
+
             if (isEditMode && id) {
-                await updatePet(id, formData);
+                await updatePet(id, petData);
             } else {
-                await createPet(formData);
+                await createPet(petData);
             }
             navigate('/admin/pets');
         } catch (err: any) {
